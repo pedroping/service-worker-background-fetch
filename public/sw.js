@@ -20,41 +20,49 @@ self.addEventListener("fetch", (event) => {
       const stream = new ReadableStream({
         start(controller) {
           function pump() {
-            reader.read().then(({ done, value }) => {
-              if (done) {
+            reader
+              .read()
+              .then(({ done, value }) => {
+                if (done) {
+                  self.clients.matchAll().then((clients) => {
+                    clients.forEach((client) => {
+                      client.postMessage({
+                        type: "DOWNLOAD_COMPLETE",
+                      });
+                    });
+                  });
+                  controller.close();
+                  return;
+                }
+
+                loaded += value.length;
+
                 self.clients.matchAll().then((clients) => {
                   clients.forEach((client) => {
                     client.postMessage({
                       type: "DOWNLOAD_PROGRESS",
-                      loaded: total,
+                      loaded,
                       total,
                     });
-                    client.postMessage({
-                      type: "DOWNLOAD_COMPLETE",
-                    });
                   });
                 });
-                controller.close();
-                return;
-              }
 
-              loaded += value.length;
+                try {
+                  controller.enqueue(value);
+                } catch (e) {
+                  return;
+                }
 
-              self.clients.matchAll().then((clients) => {
-                clients.forEach((client) => {
-                  client.postMessage({
-                    type: "DOWNLOAD_PROGRESS",
-                    loaded,
-                    total,
-                  });
-                });
+                pump();
+              })
+              .catch((err) => {
+                controller.error(err);
               });
-
-              controller.enqueue(value);
-              pump();
-            });
           }
           pump();
+        },
+        cancel() {
+          reader.cancel();
         },
       });
 

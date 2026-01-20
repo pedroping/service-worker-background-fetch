@@ -11,13 +11,18 @@
       width: 320px;
       height: 22px;
     }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 
 <body>
   <h1>Large File Download</h1>
 
-  <button id="downloadBtn">Start Download</button>
+  <button id="downloadBtn" disabled>Loading Downloader...</button>
   <br><br>
   <progress id="progressBar" value="0" max="100"></progress>
   <p id="status"></p>
@@ -30,22 +35,31 @@
     const fileUrl = "http://localhost:3000/images/Fotos-Copia.rar";
     let isDownloading = false;
 
-    navigator.serviceWorker.register('/sw.js').then(reg => {
-      navigator.serviceWorker.addEventListener("message", (event) => {
-        if (event.data.type === "DOWNLOAD_PROGRESS") {
-          const { loaded, total } = event.data;
-          const progress = Math.floor((loaded / total) * 100);
-          progressBar.value = progress;
-          statusText.innerText = `Downloading... ${progress}%`;
-        } else if (event.data.type === "DOWNLOAD_COMPLETE") {
-          statusText.innerText = "Download complete!";
-          isDownloading = false;
-        }
-      });
+    navigator.serviceWorker.addEventListener("message", (event) => {
+      handleLoadingEvent(event);
+    });
+
+    function enableDownload() {
+      if (navigator.serviceWorker.controller) {
+        downloadBtn.disabled = false;
+        downloadBtn.innerText = "Start Download";
+      }
+    }
+
+    enableDownload();
+
+
+    navigator.serviceWorker.register('/sw.js').then((e) => {
+      if (!navigator.serviceWorker.controller) window.location.reload();
     });
 
     downloadBtn.addEventListener("click", async () => {
       if (isDownloading) return;
+
+      if (!navigator.serviceWorker.controller) {
+        statusText.innerText = "Error: Service Worker not ready. Please reload.";
+        return;
+      }
 
       isDownloading = true;
       progressBar.value = 0;
@@ -55,11 +69,23 @@
       iframe.style.display = "none";
       iframe.src = fileUrl;
       document.body.appendChild(iframe);
-
-      setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 1000);
     });
+
+    function handleLoadingEvent(event) {
+      if (event.data.type === "DOWNLOAD_PROGRESS") {
+        const { loaded, total } = event.data;
+        const progress = Math.floor((loaded / total) * 100);
+
+        progressBar.value = progress;
+        statusText.innerText = `Downloading... ${progress}%`;
+
+      } else if (event.data.type === "DOWNLOAD_COMPLETE") {
+        setTimeout(() => {
+          statusText.innerText = "Download complete!";
+          isDownloading = false;
+        }, 1000)
+      }
+    }
   </script>
 </body>
 
