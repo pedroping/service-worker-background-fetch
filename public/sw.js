@@ -1,48 +1,72 @@
-self.addEventListener('install', function(event) {
-  event.waitUntil(
-    caches.open('files').then(function(cache) {
-      return cache.add('/');
-    })
-  );
+self.addEventListener("install", (event) => {
+  self.skipWaiting();
 });
 
-self.addEventListener('backgroundfetched', function(event) {
-  event.waitUntil(
-    caches.open('downloads').then(function(cache) {
-      event.updateUI('Large file downloaded');
-      registration.showNotification('File downloaded!', {
-        data: {
-          url: event.fetches[0].request.url
-        }
+self.addEventListener("activate", (event) => {
+  self.clients.claim();
+});
+
+self.addEventListener("fetch", (event) => {
+  if (!event.request.url.includes("/images/")) return;
+
+  event.respondWith(
+    (async () => {
+      const response = await fetch(event.request);
+      const total = Number(response.headers.get("Content-Length")) || 0;
+
+      let loaded = 0;
+      const reader = response.body.getReader();
+
+      const stream = new ReadableStream({
+        start(controller) {
+          function pump() {
+            reader.read().then(({ done, value }) => {
+              if (done) {
+                self.clients.matchAll().then((clients) => {
+                  clients.forEach((client) => {
+                    client.postMessage({
+                      type: "DOWNLOAD_PROGRESS",
+                      loaded: total,
+                      total,
+                    });
+                    client.postMessage({
+                      type: "DOWNLOAD_COMPLETE",
+                    });
+                  });
+                });
+                controller.close();
+                return;
+              }
+
+              loaded += value.length;
+
+              self.clients.matchAll().then((clients) => {
+                clients.forEach((client) => {
+                  client.postMessage({
+                    type: "DOWNLOAD_PROGRESS",
+                    loaded,
+                    total,
+                  });
+                });
+              });
+
+              controller.enqueue(value);
+              pump();
+            });
+          }
+          pump();
+        },
       });
 
-      const promises = event.fetches.map(({ request, response }) => {
-        if (response && response.ok) {
-          return cache.put(request, response.clone());
-        }
+      const headers = new Headers(response.headers);
+      headers.set(
+        "Content-Disposition",
+        'attachment; filename="Fotos-Copia.rar"',
+      );
+
+      return new Response(stream, {
+        headers: headers,
       });
-
-      return Promise.all(promises);
-    })
+    })(),
   );
-});
-
-self.addEventListener('notificationclick', function(event) {
-  event.notification.close();
-  const url = new URL(event.notification.data.url);
-  clients.openWindow(url.origin);
-});
-
-self.addEventListener('fetch', function(event) {
-  if (event.request.url.match(/images/)) {
-    event.respondWith(
-      caches.open('downloads').then(cache => {
-        return cache.match(event.request).then(response => {
-          return response || fetch(event.request);
-        });
-      })
-    );
-  } else {
-    event.respondWith(caches.match(event.request));
-  }
 });
