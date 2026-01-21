@@ -32,7 +32,7 @@
     const progressBar = document.getElementById("progressBar");
     const statusText = document.getElementById("status");
 
-    const fileUrl = "http://localhost:3000/images/Fotos-Copia.rar";
+    const fileUrl = "http://localhost:3000/images/test.mp4";
     let isDownloading = false;
 
     navigator.serviceWorker.addEventListener("message", (event) => {
@@ -72,6 +72,8 @@
     });
 
     function handleLoadingEvent(event) {
+      console.log(event);
+
       if (event.data.type === "DOWNLOAD_PROGRESS") {
         const { loaded, total } = event.data;
         const progress = Math.floor((loaded / total) * 100);

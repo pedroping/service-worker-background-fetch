@@ -52,7 +52,7 @@ self.addEventListener("fetch", (event) => {
                 } catch (e) {
                   return;
                 }
-
+                console.log(done, value);
                 pump();
               })
               .catch((err) => {
@@ -69,7 +69,7 @@ self.addEventListener("fetch", (event) => {
       const headers = new Headers(response.headers);
       headers.set(
         "Content-Disposition",
-        'attachment; filename="Fotos-Copia.rar"',
+        'attachment; filename="test.mp4"',
       );
 
       return new Response(stream, {
