@@ -61,5 +61,5 @@ app.get("/images/Fotos-Copia.rar", (req, res) => {
 });
 
 app.listen(process.env.PORT || 3000, () => {
-  console.log("Application started");
+  console.log("Application started at http://localhost:3000");
 });

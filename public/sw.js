@@ -67,14 +67,34 @@ self.addEventListener("fetch", (event) => {
       });
 
       const headers = new Headers(response.headers);
-      headers.set(
-        "Content-Disposition",
-        'attachment; filename="test.mp4"',
-      );
+      headers.set("Content-Disposition", 'attachment; filename="test.mp4"');
 
       return new Response(stream, {
         headers: headers,
       });
     })(),
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "myCustomEventType") {
+    console.log(
+      'Custom event "myCustomEventType" received with payload:',
+      event.data.payload,
+    );
+
+    self.clients.matchAll().then((clients) => {
+      clients.forEach((client) => {
+        client.postMessage({
+          type: "myCustomEventTypeResponse",
+          status: "success",
+        });
+      });
+    });
+
+    // event.source.postMessage({
+    //   type: "myCustomEventTypeResponse",
+    //   status: "success",
+    // });
+  }
 });

@@ -51,6 +51,11 @@
 
     navigator.serviceWorker.register('/sw.js').then((e) => {
       if (!navigator.serviceWorker.controller) window.location.reload();
+
+      navigator.serviceWorker.controller.postMessage({
+        type: 'myCustomEventType',
+        payload: { data: 'some important data' }
+      });
     });
 
     downloadBtn.addEventListener("click", async () => {
@@ -80,12 +85,15 @@
 
         progressBar.value = progress;
         statusText.innerText = `Downloading... ${progress}%`;
+        return;
+      }
 
-      } else if (event.data.type === "DOWNLOAD_COMPLETE") {
+      if (event.data.type === "DOWNLOAD_COMPLETE") {
         setTimeout(() => {
           statusText.innerText = "Download complete!";
           isDownloading = false;
-        }, 1000)
+        }, 1000);
+        return;
       }
     }
   </script>
