@@ -27,7 +27,10 @@
   <progress id="progressBar" value="0" max="100"></progress>
   <p id="status"></p>
 
+  <button id="messageBtn">Message Btn</button>
+
   <script>
+    const messageBtn = document.getElementById("messageBtn");
     const downloadBtn = document.getElementById("downloadBtn");
     const progressBar = document.getElementById("progressBar");
     const statusText = document.getElementById("status");
@@ -51,12 +54,14 @@
 
     navigator.serviceWorker.register('/sw.js').then((e) => {
       if (!navigator.serviceWorker.controller) window.location.reload();
+    });
 
+    messageBtn.addEventListener('click', () => {
       navigator.serviceWorker.controller.postMessage({
         type: 'myCustomEventType',
         payload: { data: 'some important data' }
       });
-    });
+    })
 
     downloadBtn.addEventListener("click", async () => {
       if (isDownloading) return;
