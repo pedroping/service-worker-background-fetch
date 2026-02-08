@@ -13,6 +13,7 @@ self.addEventListener("fetch", (event) => {
     (async () => {
       const response = await fetch(event.request);
       const total = Number(response.headers.get("Content-Length")) || 0;
+      const contentName = response.headers.get("X-Content-Name");
 
       let loaded = 0;
       const reader = response.body.getReader();
@@ -52,7 +53,6 @@ self.addEventListener("fetch", (event) => {
                 } catch (e) {
                   return;
                 }
-                console.log(done, value);
                 pump();
               })
               .catch((err) => {
@@ -67,7 +67,10 @@ self.addEventListener("fetch", (event) => {
       });
 
       const headers = new Headers(response.headers);
-      headers.set("Content-Disposition", 'attachment; filename="test.mp4"');
+      headers.set(
+        "Content-Disposition",
+        `attachment; filename="${contentName ?? "test.mp4"}"`,
+      );
 
       return new Response(stream, {
         headers: headers,

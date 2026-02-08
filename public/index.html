@@ -22,7 +22,10 @@
 <body>
   <h1>Large File Download</h1>
 
-  <button id="downloadBtn" disabled>Loading Downloader...</button>
+  <button id="download" file="file1Url" disabled>Loading Downloader...</button>
+  <button id="download" file="file2Url" disabled>Loading Downloader...</button>
+  <button id="download" file="file3Url" disabled>Loading Downloader...</button>
+
   <br><br>
   <progress id="progressBar" value="0" max="100"></progress>
   <p id="status"></p>
@@ -31,11 +34,13 @@
 
   <script>
     const messageBtn = document.getElementById("messageBtn");
-    const downloadBtn = document.getElementById("downloadBtn");
+    const downloadBtns = document.querySelectorAll("#download");
     const progressBar = document.getElementById("progressBar");
     const statusText = document.getElementById("status");
 
-    const fileUrl = "http://localhost:3000/images/test.mp4";
+    window.file1Url = "http://localhost:3000/images/test.mp4";
+    window.file2Url = "http://localhost:3000/images/twilio.png";
+    window.file3Url = "http://localhost:3000/images/Fotos-Copia.rar";
     let isDownloading = false;
 
     navigator.serviceWorker.addEventListener("message", (event) => {
@@ -44,8 +49,10 @@
 
     function enableDownload() {
       if (navigator.serviceWorker.controller) {
-        downloadBtn.disabled = false;
-        downloadBtn.innerText = "Start Download";
+        Array.from(downloadBtns).forEach(btn => {
+          btn.disabled = false;
+          btn.innerText = "Start Download";
+        })
       }
     }
 
@@ -63,26 +70,38 @@
       });
     })
 
-    downloadBtn.addEventListener("click", async () => {
-      if (isDownloading) return;
+    Array.from(downloadBtns).forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (isDownloading) return;
 
-      if (!navigator.serviceWorker.controller) {
-        statusText.innerText = "Error: Service Worker not ready. Please reload.";
-        return;
-      }
+        if (!navigator.serviceWorker.controller) {
+          statusText.innerText = "Error: Service Worker not ready. Please reload.";
+          return;
+        }
 
-      isDownloading = true;
-      progressBar.value = 0;
-      statusText.innerText = "Starting download...";
+        isDownloading = true;
+        progressBar.value = 0;
+        statusText.innerText = "Starting download...";
 
-      const iframe = document.createElement("iframe");
-      iframe.style.display = "none";
-      iframe.src = fileUrl;
-      document.body.appendChild(iframe);
-    });
+        const fileName = btn.getAttribute('file');
+
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = this[fileName];
+        iframe.id = 'downloadFrame'
+        document.body.appendChild(iframe);
+      });
+    })
+
+
 
     function handleLoadingEvent(event) {
-      console.log(event);
+      let frame = document.getElementById('downloadFrame');
+      if (frame) {
+        document.body.removeChild(frame);
+        frame = null;
+      }
+
 
       if (event.data.type === "DOWNLOAD_PROGRESS") {
         const { loaded, total } = event.data;

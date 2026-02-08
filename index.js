@@ -24,6 +24,9 @@ app.get("/images/twilio.png", (req, res) => {
     res.setHeader("Content-Length", stats.size);
     res.setHeader("Content-Type", "image/png");
 
+    res.set("X-Content-Name", "twilio.png");
+    res.set("Access-Control-Expose-Headers", "X-Content-Name");
+
     res.sendFile(filePath);
   });
 });
@@ -40,6 +43,9 @@ app.get("/images/test.mp4", (req, res) => {
     res.setHeader("Content-Length", stats.size);
     res.setHeader("Content-Type", "video/mp4");
 
+    res.set("X-Content-Name", "test.mp4");
+    res.set("Access-Control-Expose-Headers", "X-Content-Name");
+
     res.sendFile(filePath);
   });
 });
@@ -55,6 +61,9 @@ app.get("/images/Fotos-Copia.rar", (req, res) => {
 
     res.setHeader("Content-Length", stats.size);
     res.setHeader("Content-Type", "application/vnd.rar");
+
+    res.set("X-Content-Name", "Fotos-Copia.rar");
+    res.set("Access-Control-Expose-Headers", "X-Content-Name");
 
     res.sendFile(filePath);
   });
