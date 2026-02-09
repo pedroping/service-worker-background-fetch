@@ -24,7 +24,6 @@
 
   <button id="download" file="file1Url" disabled>Loading Downloader...</button>
   <button id="download" file="file2Url" disabled>Loading Downloader...</button>
-  <button id="download" file="file3Url" disabled>Loading Downloader...</button>
 
   <br><br>
   <progress id="progressBar" value="0" max="100"></progress>
@@ -39,8 +38,7 @@
     const statusText = document.getElementById("status");
 
     window.file1Url = "http://localhost:3000/images/test.mp4";
-    window.file2Url = "http://localhost:3000/images/twilio.png";
-    window.file3Url = "http://localhost:3000/images/Fotos-Copia.rar";
+    window.file2Url = "http://localhost:3000/images/stream-folder";
     let isDownloading = false;
 
     navigator.serviceWorker.addEventListener("message", (event) => {

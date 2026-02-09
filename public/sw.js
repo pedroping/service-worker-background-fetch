@@ -66,13 +66,20 @@ self.addEventListener("fetch", (event) => {
         },
       });
 
-      const headers = new Headers(response.headers);
-      headers.set(
-        "Content-Disposition",
-        `attachment; filename="${contentName ?? "test.mp4"}"`,
+      const compressedReadableStream = stream.pipeThrough(
+        new CompressionStream("gzip"),
       );
 
-      return new Response(stream, {
+      const headers = new Headers(response.headers);
+
+      headers.delete("Content-Length");
+
+      headers.set(
+        "Content-Disposition",
+        `attachment; filename="${contentName}.gz"`,
+      );
+
+      return new Response(compressedReadableStream, {
         headers: headers,
       });
     })(),
