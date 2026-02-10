@@ -1,0 +1,13 @@
+{
+  "title": "My series",
+  "urls": ["/images/test.mp4", "/images/twilio.png", "/images/stream-folder"],
+  "downloadTotal": 1048576000,
+  "icons": [
+    {
+      "src": "icon.png",
+      "size": "128x128",
+      "type": "image/png"
+    }
+  ],
+  "descriptionUrl": "http://localhost:3000/"
+}

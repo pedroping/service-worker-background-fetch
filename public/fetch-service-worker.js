@@ -1,9 +1,29 @@
 self.addEventListener("install", (event) => {
   self.skipWaiting();
+  console.log("[Fetch Service Worker]: Installed");
+
+  self.clients.matchAll().then((clients) => {
+    clients.forEach((client) => {
+      client.postMessage({
+        type: "ACTIVE",
+        status: "success",
+      });
+    });
+  });
 });
 
-self.addEventListener("activate", (event) => {
+self.addEventListener("activate", () => {
   self.clients.claim();
+  console.log("[Fetch Service Worker]: Active");
+
+  self.clients.matchAll().then((clients) => {
+    clients.forEach((client) => {
+      client.postMessage({
+        type: "ACTIVE",
+        status: "success",
+      });
+    });
+  });
 });
 
 self.addEventListener("fetch", (event) => {
@@ -11,7 +31,18 @@ self.addEventListener("fetch", (event) => {
 
   event.respondWith(
     (async () => {
-      const response = await fetch(event.request);
+      let response;
+      try {
+        const cache = await caches.open("series");
+        response = await cache.match(event.request);
+      } catch (err) {
+        console.warn("Cache check failed, falling back to network", err);
+      }
+
+      if (!response) {
+        response = await fetch(event.request);
+      }
+
       const total = Number(response.headers.get("Content-Length")) || 0;
       const contentName = response.headers.get("X-Content-Name");
 

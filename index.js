@@ -5,11 +5,25 @@ const fs = require("fs");
 const app = express();
 
 app.get("/", (req, res) => {
+  res.cookie("TokenCookie", "afkanfpoqhoij312lkmalkkslfahjçlksh", {
+    path: "/",
+    httpOnly: true,
+    maxAge: 2592000,
+    secure: true,
+  });
   res.sendFile("index.html", { root: "./public" });
 });
 
-app.get("/sw.js", (req, res) => {
-  res.sendFile("sw.js", { root: "./public" });
+app.get("/fetch-service-worker.js", (req, res) => {
+  res.sendFile("fetch-service-worker.js", { root: "./public" });
+});
+
+app.get("/background-fetch-service-worker.js", (req, res) => {
+  res.sendFile("background-fetch-service-worker.js", { root: "./public" });
+});
+
+app.get("/series-data.json", (req, res) => {
+  res.sendFile("series-data.json", { root: "./public" });
 });
 
 app.get("/images/twilio.png", (req, res) => {
@@ -33,6 +47,8 @@ app.get("/images/twilio.png", (req, res) => {
 
 app.get("/images/test.mp4", (req, res) => {
   const filePath = path.join(__dirname, "public/images/test.mp4");
+
+  console.log(req.headers.cookie);
 
   fs.stat(filePath, (err, stats) => {
     if (err) {

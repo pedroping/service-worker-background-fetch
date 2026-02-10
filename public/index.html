@@ -22,8 +22,10 @@
 <body>
   <h1>Large File Download</h1>
 
-  <button id="download" file="file1Url" disabled>Loading Downloader...</button>
-  <button id="download" file="file2Url" disabled>Loading Downloader...</button>
+  <button id="download" file="file1Url">Start Download</button>
+  <button id="download" file="file2Url">Start Download</button>
+  <button id="bgFetchButton">Store assets locally</button>
+
 
   <br><br>
   <progress id="progressBar" value="0" max="100"></progress>
@@ -36,12 +38,22 @@
     const downloadBtns = document.querySelectorAll("#download");
     const progressBar = document.getElementById("progressBar");
     const statusText = document.getElementById("status");
+    const bgFetchButton = document.querySelector('#bgFetchButton');
+
 
     window.file1Url = "http://localhost:3000/images/test.mp4";
     window.file2Url = "http://localhost:3000/images/stream-folder";
     let isDownloading = false;
 
+
     navigator.serviceWorker.addEventListener("message", (event) => {
+      console.log(event);
+
+      if (event.data.type === "ACTIVE") {
+        enableDownload();
+        return;
+      }
+
       handleLoadingEvent(event);
     });
 
@@ -54,13 +66,6 @@
       }
     }
 
-    enableDownload();
-
-
-    navigator.serviceWorker.register('/sw.js').then((e) => {
-      if (!navigator.serviceWorker.controller) window.location.reload();
-    });
-
     messageBtn.addEventListener('click', () => {
       navigator.serviceWorker.controller.postMessage({
         type: 'myCustomEventType',
@@ -70,28 +75,30 @@
 
     Array.from(downloadBtns).forEach(btn => {
       btn.addEventListener("click", async () => {
-        if (isDownloading) return;
+        navigator.serviceWorker.register('/fetch-service-worker.js').then((e) => {
+          console.log(e);
+          if (isDownloading) return;
 
-        if (!navigator.serviceWorker.controller) {
-          statusText.innerText = "Error: Service Worker not ready. Please reload.";
-          return;
-        }
+          if (!navigator.serviceWorker.controller) {
+            statusText.innerText = "Error: Service Worker not ready. Please reload.";
+            return;
+          }
 
-        isDownloading = true;
-        progressBar.value = 0;
-        statusText.innerText = "Starting download...";
+          isDownloading = true;
+          progressBar.value = 0;
+          statusText.innerText = "Starting download...";
 
-        const fileName = btn.getAttribute('file');
+          const fileName = btn.getAttribute('file');
 
-        const iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        iframe.src = this[fileName];
-        iframe.id = 'downloadFrame'
-        document.body.appendChild(iframe);
+          const iframe = document.createElement("iframe");
+          iframe.style.display = "none";
+          iframe.src = this[fileName];
+          iframe.id = 'downloadFrame'
+          document.body.appendChild(iframe);
+        });
+
       });
     })
-
-
 
     function handleLoadingEvent(event) {
       let frame = document.getElementById('downloadFrame');
@@ -118,6 +125,121 @@
         return;
       }
     }
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        console.log('Message from SW:', event.data);
+      });
+
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/background-fetch-service-worker.js').then(() => {
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            console.log('Message from SW:', event.data);
+          });
+        });
+
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          console.log('Message from SW:', event.data);
+        });
+
+      });
+    }
+
+    bgFetchButton.addEventListener('click', async () => {
+      const assetToFetchId = 'series';
+      bgFetchButton.disabled = true;
+
+      try {
+        const swRegistration = await navigator.serviceWorker.ready;
+
+        const assetsDataResponse = await fetch(`/${assetToFetchId}-data.json`);
+        if (!assetsDataResponse.ok) throw new Error("Failed to fetch asset data");
+
+        const assetsData = await assetsDataResponse.json();
+
+        const bgFetchRegistration = await swRegistration.backgroundFetch.fetch(
+          assetToFetchId,
+          assetsData.urls,
+          {
+            icons: assetsData.icons || [],
+            title: `Downloading ${assetsData.title || 'Content'}`,
+            downloadTotal: assetsData.downloadTotal || 1048576000,
+          }
+        );
+
+        bgFetchRegistration.addEventListener('progress', (event) => {
+          const fetchReg = event.target;
+
+          if (fetchReg.downloadTotal > 0) {
+            const percent = Math.round((fetchReg.downloaded / fetchReg.downloadTotal) * 100);
+            console.log(`Progress: ${percent}%`);
+          }
+
+          if (fetchReg.result === 'success') {
+            console.log('Download finished successfully');
+            bgFetchButton.disabled = false;
+          } else if (fetchReg.result === 'failure') {
+            console.error('Download failed');
+            bgFetchButton.disabled = false;
+          }
+        });
+
+      } catch (err) {
+        console.error("Background Fetch Error:", err);
+        bgFetchButton.disabled = false;
+        alert('Could not start download. Please ensure you are connected to the internet.');
+      }
+    });
+
+    // bgFetchButton.addEventListener('click', async event => {
+    //   navigator.serviceWorker.addEventListener('message', e => console.log(e));
+
+    //   navigator.serviceWorker.register('/background-fetch-service-worker.js').then(async (e) => {
+    //     let assetToFetchId = 'series';
+
+    //     navigator.serviceWorker.addEventListener('message', e => console.log(e));
+
+    //     try {
+    //       bgFetchButton.disabled = true;
+    //       const registration = await navigator.serviceWorker.ready;
+
+    //       navigator.serviceWorker.addEventListener('message', e => console.log(e));
+
+    //       console.log(registration);
+
+    //       let assetsDataResponse = await fetch(
+    //         `/${assetToFetchId}-data.json`
+    //       );
+    //       let assetsData = await assetsDataResponse.json();
+
+    //       const bgFetchRegistration = await registration.backgroundFetch.fetch(
+    //         assetToFetchId,
+    //         assetsData.urls,
+    //         {
+    //           icons: assetsData.icons,
+    //           title: `Downloading ${assetsData.title}`,
+    //           downloadTotal: 524288000
+    //         }
+    //       );
+
+    //       bgFetchRegistration.addEventListener('progress', event => {
+    //         console.log(event);
+
+    //         fetchProgress = event.srcElement;
+
+    //         if (fetchProgress.result == 'success') {
+    //           bgFetchButton.disabled = false;
+    //         }
+    //       });
+
+    //     } catch (err) {
+    //       alert(
+    //         'Please enable downloads for this website (click the icon on the right side of the address bar)'
+    //       );
+    //       console.error(err);
+    //     }
+    //   });
+    // });
   </script>
 </body>
 
