@@ -14,11 +14,25 @@ app.get("/", (req, res) => {
   res.sendFile("index.html", { root: "./public" });
 });
 
+app.get("/download", (req, res) => {
+  res.cookie("TokenCookie", "afkanfpoqhoij312lkmalkkslfahjçlksh", {
+    path: "/",
+    httpOnly: true,
+    maxAge: 2592000,
+    secure: true,
+  });
+  res.sendFile("index-background-fetch.html", { root: "./public" });
+});
+
 app.get("/fetch-service-worker.js", (req, res) => {
   res.sendFile("fetch-service-worker.js", { root: "./public" });
 });
 
 app.get("/background-fetch-service-worker.js", (req, res) => {
+  res.sendFile("background-fetch-service-worker.js", { root: "./public" });
+});
+
+app.get("/download/background-fetch-service-worker.js", (req, res) => {
   res.sendFile("background-fetch-service-worker.js", { root: "./public" });
 });
 

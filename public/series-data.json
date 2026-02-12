@@ -1,7 +1,7 @@
 {
   "title": "My series",
   "urls": ["/images/test.mp4", "/images/twilio.png", "/images/stream-folder"],
-  "downloadTotal": 1048576000,
+  "downloadTotal": 584327786,
   "icons": [
     {
       "src": "icon.png",

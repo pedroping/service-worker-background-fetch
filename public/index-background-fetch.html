@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Large File Download</title>
+  <style>
+    progress {
+      width: 320px;
+      height: 22px;
+    }
+
+    button:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>BackGround fetch</h1>
+
+  <button id="bgFetchButton">Store assets locally</button>
+  <br><br>
+  <button id="messageBtn">Message Btn</button>
+  <br><br>
+  <a href="/">Fetch page</a>
+
+
+  <script>
+    const messageBtn = document.getElementById("messageBtn");
+    const bgFetchButton = document.querySelector('#bgFetchButton');
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        console.log('Message from SW:', event.data);
+      });
+
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/background-fetch-service-worker.js')
+          .then(reg => console.log('SW Registered:', reg))
+          .catch(err => console.error('SW Registration Failed:', err));
+      });
+    }
+
+    messageBtn.addEventListener('click', () => {
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'myCustomEventType',
+          payload: { data: 'some important data' }
+        });
+      } else {
+        console.warn("No active Service Worker controller found.");
+      }
+    });
+
+    bgFetchButton.addEventListener('click', async () => {
+      if (!('BackgroundFetchManager' in self)) {
+        alert('Background Fetch is not supported by this browser.');
+        return;
+      }
+
+      const assetToFetchId = 'series';
+      bgFetchButton.disabled = true;
+
+      try {
+        const swRegistration = await navigator.serviceWorker.ready;
+
+        const assetsDataResponse = await fetch(`/${assetToFetchId}-data.json`);
+
+        if (!assetsDataResponse.ok) throw new Error(`Failed to fetch ${assetToFetchId}-data.json`);
+
+        const assetsData = await assetsDataResponse.json();
+
+        const bgFetchRegistration = await swRegistration.backgroundFetch.fetch(
+          assetToFetchId,
+          assetsData.urls,
+          {
+            icons: assetsData.icons || [],
+            title: `Downloading ${assetsData.title || 'Content'}`,
+            downloadTotal: assetsData.downloadTotal || 584327786,
+          }
+        );
+
+        bgFetchRegistration.addEventListener('progress', (event) => {
+          const fetchReg = event.target;
+
+          if (fetchReg.downloadTotal > 0) {
+            const percent = Math.round((fetchReg.downloaded / fetchReg.downloadTotal) * 100);
+            console.log(`Progress: ${percent}%`);
+          }
+
+          if (fetchReg.result === 'success') {
+            console.log('Download finished successfully', event);
+            bgFetchButton.disabled = false;
+          } else if (fetchReg.result === 'failure') {
+            console.error('Download failed', event);
+            bgFetchButton.disabled = false;
+          }
+        });
+
+      } catch (err) {
+        console.error("Background Fetch Error:", err);
+        bgFetchButton.disabled = false;
+        alert('Could not start download. Check console for details.');
+      }
+    });
+  </script>
+</body>
+
+</html>
