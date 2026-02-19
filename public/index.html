@@ -48,7 +48,7 @@
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/fetch-service-worker.js').then((e) => {
+        navigator.serviceWorker.register('/fetch-service-worker.js', { scope: '/' }).then((e) => {
           navigator.serviceWorker.addEventListener('message', (event) => {
             console.log('Message from SW:', event.data);
             handleLoadingEvent(event);
