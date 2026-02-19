@@ -22,9 +22,8 @@
 <body>
   <h1>Large File Download</h1>
 
-  <button id="download" file="file1Url">Start Download</button>
-  <button id="download" file="file2Url">Start Download</button>
-
+  <button class="downloadBtn" file="file1Url">Start Download</button>
+  <button class="downloadBtn" file="file2Url">Start Download</button>
 
   <br><br>
   <progress id="progressBar" value="0" max="100"></progress>
@@ -37,33 +36,42 @@
 
   <script>
     const messageBtn = document.getElementById("messageBtn");
-    const downloadBtns = document.querySelectorAll("#download");
+    const downloadBtns = document.querySelectorAll(".downloadBtn"); // Updated to select by class
     const progressBar = document.getElementById("progressBar");
     const statusText = document.getElementById("status");
-
 
     window.file1Url = "http://localhost:3000/images/test.mp4";
     window.file2Url = "http://localhost:3000/images/stream-folder";
     let isDownloading = false;
 
+    // 1. Unified Service Worker Registration
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/fetch-service-worker.js').then((e) => {
-          navigator.serviceWorker.addEventListener('message', (event) => {
-            console.log('Message from SW:', event.data);
-            handleLoadingEvent(event);
-          });
-        });
+        // Register the unified SW
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => {
+            console.log('SW Registered successfully:', reg);
+            
+            // Listen for messages from the SW
+            navigator.serviceWorker.addEventListener('message', (event) => {
+              console.log('Message from SW:', event.data);
+              handleLoadingEvent(event);
+            });
+          })
+          .catch(err => console.error('SW Registration Failed:', err));
       });
     }
 
-
     messageBtn.addEventListener('click', () => {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'myCustomEventType',
-        payload: { data: 'some important data' }
-      });
-    })
+      if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+          type: 'myCustomEventType',
+          payload: { data: 'some important data' }
+        });
+      } else {
+        console.warn("No active SW controller found.");
+      }
+    });
 
     Array.from(downloadBtns).forEach(btn => {
       btn.addEventListener("click", async () => {
@@ -82,19 +90,18 @@
 
         const iframe = document.createElement("iframe");
         iframe.style.display = "none";
-        iframe.src = this[fileName];
-        iframe.id = 'downloadFrame'
+        iframe.src = window[fileName];
+        iframe.id = 'downloadFrame';
         document.body.appendChild(iframe);
       });
-
-    })
+    });
 
     function enableDownload() {
       if (navigator.serviceWorker.controller) {
         Array.from(downloadBtns).forEach(btn => {
           btn.disabled = false;
           btn.innerText = "Start Download";
-        })
+        });
       }
     }
 
@@ -104,7 +111,6 @@
         document.body.removeChild(frame);
         frame = null;
       }
-
 
       if (event.data.type === "DOWNLOAD_PROGRESS") {
         const { loaded, total } = event.data;

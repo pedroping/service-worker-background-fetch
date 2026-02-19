@@ -27,23 +27,27 @@
   <br><br>
   <a href="/">Fetch page</a>
 
-
   <script>
     const messageBtn = document.getElementById("messageBtn");
     const bgFetchButton = document.querySelector('#bgFetchButton');
 
+    // 1. Unified Service Worker Registration (Points to the exact same /sw.js)
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        console.log('Message from SW:', event.data);
-      });
-
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/background-fetch-service-worker.js')
-          .then(reg => console.log('SW Registered:', reg))
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => {
+            console.log('SW Registered successfully:', reg);
+            
+            // Listen for messages from the SW
+            navigator.serviceWorker.addEventListener('message', (event) => {
+              console.log('Message from SW:', event.data);
+            });
+          })
           .catch(err => console.error('SW Registration Failed:', err));
       });
     }
 
+    // 2. Handle Messages
     messageBtn.addEventListener('click', () => {
       if (navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({
@@ -51,10 +55,11 @@
           payload: { data: 'some important data' }
         });
       } else {
-        console.warn("No active Service Worker controller found.");
+        console.warn("No active Service Worker controller found. (The page might need a refresh)");
       }
     });
 
+    // 3. Handle Background Fetch
     bgFetchButton.addEventListener('click', async () => {
       if (!('BackgroundFetchManager' in self)) {
         alert('Background Fetch is not supported by this browser.');
@@ -68,7 +73,6 @@
         const swRegistration = await navigator.serviceWorker.ready;
 
         const assetsDataResponse = await fetch(`/${assetToFetchId}-data.json`);
-
         if (!assetsDataResponse.ok) throw new Error(`Failed to fetch ${assetToFetchId}-data.json`);
 
         const assetsData = await assetsDataResponse.json();
@@ -85,7 +89,6 @@
 
         bgFetchRegistration.addEventListener('progress', (event) => {
           const fetchReg = event.target;
-
           if (fetchReg.downloadTotal > 0) {
             const percent = Math.round((fetchReg.downloaded / fetchReg.downloadTotal) * 100);
             console.log(`Progress: ${percent}%`);

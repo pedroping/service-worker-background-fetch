@@ -24,16 +24,8 @@ app.get("/download", (req, res) => {
   res.sendFile("index-background-fetch.html", { root: "./public" });
 });
 
-app.get("/fetch-service-worker.js", (req, res) => {
-  res.sendFile("fetch-service-worker.js", { root: "./public" });
-});
-
-app.get("/background-fetch-service-worker.js", (req, res) => {
-  res.sendFile("background-fetch-service-worker.js", { root: "./public" });
-});
-
-app.get("/download/background-fetch-service-worker.js", (req, res) => {
-  res.sendFile("background-fetch-service-worker.js", { root: "./public" });
+app.get("/sw.js", (req, res) => {
+  res.sendFile("sw.js", { root: "./public" });
 });
 
 app.get("/series-data.json", (req, res) => {
