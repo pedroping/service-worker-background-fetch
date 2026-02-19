@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Large File Download</title>
+  <title>File Download</title>
 
   <style>
     progress {
@@ -20,22 +20,20 @@
 </head>
 
 <body>
-  <h1>Large File Download</h1>
+  <h1>File Download</h1>
 
   <button id="download" file="file1Url">Start Download</button>
   <button id="download" file="file2Url">Start Download</button>
-
-
   <br><br>
   <progress id="progressBar" value="0" max="100"></progress>
   <p id="status"></p>
-
   <button id="messageBtn">Message Btn</button>
   <br><br>
 
   <a href="/download">BackGround fetch page</a>
 
   <script>
+    let isDownloading = false;
     const messageBtn = document.getElementById("messageBtn");
     const downloadBtns = document.querySelectorAll("#download");
     const progressBar = document.getElementById("progressBar");
@@ -44,19 +42,18 @@
 
     window.file1Url = "http://localhost:3000/images/test.mp4";
     window.file2Url = "http://localhost:3000/images/stream-folder";
-    let isDownloading = false;
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/fetch-service-worker.js', { scope: '/' }).then((e) => {
-          navigator.serviceWorker.addEventListener('message', (event) => {
-            console.log('Message from SW:', event.data);
-            handleLoadingEvent(event);
-          });
-        });
+        navigator.serviceWorker.register('/fetch-service-worker.js', { scope: '/' })
+          .then((e) => {
+            navigator.serviceWorker.addEventListener('message', (event) => {
+              console.log('Message from SW:', event.data);
+              handleLoadingEvent(event);
+            });
+          }).catch(err => console.error('SW Registration Failed:', err));
       });
     }
-
 
     messageBtn.addEventListener('click', () => {
       navigator.serviceWorker.controller.postMessage({
@@ -64,39 +61,6 @@
         payload: { data: 'some important data' }
       });
     })
-
-    Array.from(downloadBtns).forEach(btn => {
-      btn.addEventListener("click", async () => {
-        if (isDownloading) return;
-
-        if (!navigator.serviceWorker.controller) {
-          statusText.innerText = "Error: Service Worker not ready. Please reload.";
-          return;
-        }
-
-        isDownloading = true;
-        progressBar.value = 0;
-        statusText.innerText = "Starting download...";
-
-        const fileName = btn.getAttribute('file');
-
-        const iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        iframe.src = this[fileName];
-        iframe.id = 'downloadFrame'
-        document.body.appendChild(iframe);
-      });
-
-    })
-
-    function enableDownload() {
-      if (navigator.serviceWorker.controller) {
-        Array.from(downloadBtns).forEach(btn => {
-          btn.disabled = false;
-          btn.innerText = "Start Download";
-        })
-      }
-    }
 
     function handleLoadingEvent(event) {
       let frame = document.getElementById('downloadFrame');
@@ -121,6 +85,29 @@
         return;
       }
     }
+
+    Array.from(downloadBtns).forEach(btn => {
+      btn.addEventListener("click", async () => {
+        if (isDownloading) return;
+
+        if (!navigator.serviceWorker.controller) {
+          statusText.innerText = "Error: Service Worker not ready. Please reload.";
+          return;
+        }
+
+        isDownloading = true;
+        progressBar.value = 0;
+        statusText.innerText = "Starting download...";
+
+        const fileName = btn.getAttribute('file');
+
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = this[fileName];
+        iframe.id = 'downloadFrame'
+        document.body.appendChild(iframe);
+      });
+    })
   </script>
 </body>
 

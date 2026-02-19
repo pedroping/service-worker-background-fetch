@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Large File Download</title>
+  <title>BackGround fetch</title>
   <style>
     progress {
       width: 320px;
@@ -23,13 +23,11 @@
 
   <button id="bgFetchButton">Store assets locally</button>
   <br><br>
-  <button id="messageBtn">Message Btn</button>
   <br><br>
   <a href="/">Fetch page</a>
 
 
   <script>
-    const messageBtn = document.getElementById("messageBtn");
     const bgFetchButton = document.querySelector('#bgFetchButton');
 
     if ('serviceWorker' in navigator) {
@@ -43,17 +41,6 @@
           .catch(err => console.error('SW Registration Failed:', err));
       });
     }
-
-    messageBtn.addEventListener('click', () => {
-      if (navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({
-          type: 'myCustomEventType',
-          payload: { data: 'some important data' }
-        });
-      } else {
-        console.warn("No active Service Worker controller found.");
-      }
-    });
 
     bgFetchButton.addEventListener('click', async () => {
       if (!('BackgroundFetchManager' in self)) {
