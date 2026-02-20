@@ -31,14 +31,11 @@
     const messageBtn = document.getElementById("messageBtn");
     const bgFetchButton = document.querySelector('#bgFetchButton');
 
-    // 1. Unified Service Worker Registration (Points to the exact same /sw.js)
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js')
           .then(reg => {
             console.log('SW Registered successfully:', reg);
-            
-            // Listen for messages from the SW
             navigator.serviceWorker.addEventListener('message', (event) => {
               console.log('Message from SW:', event.data);
             });
@@ -47,7 +44,6 @@
       });
     }
 
-    // 2. Handle Messages
     messageBtn.addEventListener('click', () => {
       if (navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({
@@ -55,11 +51,10 @@
           payload: { data: 'some important data' }
         });
       } else {
-        console.warn("No active Service Worker controller found. (The page might need a refresh)");
+        console.warn("No active SW controller found.");
       }
     });
 
-    // 3. Handle Background Fetch
     bgFetchButton.addEventListener('click', async () => {
       if (!('BackgroundFetchManager' in self)) {
         alert('Background Fetch is not supported by this browser.');
