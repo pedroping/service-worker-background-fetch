@@ -1,114 +1,119 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>File Download</title>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>File Download</title>
+    <style>
+      progress {
+        width: 320px;
+        height: 22px;
+      }
 
-  <style>
-    progress {
-      width: 320px;
-      height: 22px;
-    }
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+    </style>
+  </head>
 
-    button:disabled {
-      background-color: #ccc;
-      cursor: not-allowed;
-    }
-  </style>
-</head>
+  <body>
+    <h1>File Download</h1>
 
-<body>
-  <h1>File Download</h1>
+    <button id="download" file="file1Url">Start Download File 1</button>
+    <button id="download" file="file2Url">Start Download File 2</button>
+    <button id="download" file="file3Url">Start Download File 3</button>
+    <br /><br />
+    <progress id="progressBar" value="0" max="100"></progress>
+    <p id="status"></p>
+    <button id="messageBtn">Message Btn</button>
+    <br /><br />
 
-  <button id="download" file="file1Url">Start Download</button>
-  <button id="download" file="file2Url">Start Download</button>
-  <br><br>
-  <progress id="progressBar" value="0" max="100"></progress>
-  <p id="status"></p>
-  <button id="messageBtn">Message Btn</button>
-  <br><br>
+    <a href="/download">BackGround fetch page</a>
 
-  <a href="/download">BackGround fetch page</a>
+    <script>
+      let isDownloading = false;
+      const messageBtn = document.getElementById("messageBtn");
+      const downloadBtns = document.querySelectorAll("#download");
+      const progressBar = document.getElementById("progressBar");
+      const statusText = document.getElementById("status");
 
-  <script>
-    let isDownloading = false;
-    const messageBtn = document.getElementById("messageBtn");
-    const downloadBtns = document.querySelectorAll("#download");
-    const progressBar = document.getElementById("progressBar");
-    const statusText = document.getElementById("status");
+      window.file1Url = "http://localhost:3000/images/test.mp4";
+      window.file2Url = "http://localhost:3000/images/stream-folder";
+      window.file3Url = "http://localhost:3000/images/movie.mkv";
 
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/fetch-service-worker.js", { scope: "/" })
+            .then((e) => {
+              navigator.serviceWorker.addEventListener("message", (event) => {
+                handleLoadingEvent(event);
+              });
+            })
+            .catch((err) => console.error("SW Registration Failed:", err));
+        });
+      }
 
-    window.file1Url = "http://localhost:3000/images/test.mp4";
-    window.file2Url = "http://localhost:3000/images/stream-folder";
-
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/fetch-service-worker.js', { scope: '/' })
-          .then((e) => {
-            navigator.serviceWorker.addEventListener('message', (event) => {
-              console.log('Message from SW:', event.data);
-              handleLoadingEvent(event);
-            });
-          }).catch(err => console.error('SW Registration Failed:', err));
+      messageBtn.addEventListener("click", () => {
+        navigator.serviceWorker.controller.postMessage({
+          type: "myCustomEventType",
+          payload: { data: "some important data" },
+        });
       });
-    }
 
-    messageBtn.addEventListener('click', () => {
-      navigator.serviceWorker.controller.postMessage({
-        type: 'myCustomEventType',
-        payload: { data: 'some important data' }
-      });
-    })
+      function handleLoadingEvent(event) {
+        let frame = document.getElementById("downloadFrame");
+        if (frame) {
+          document.body.removeChild(frame);
+          frame = null;
+        }
 
-    function handleLoadingEvent(event) {
-      let frame = document.getElementById('downloadFrame');
-      if (frame) {
-        document.body.removeChild(frame);
-        frame = null;
-      }
+        if (event.data.type === "DOWNLOAD_PROGRESS") {
+          const { loaded, total } = event.data;
+          const progress = Math.floor((loaded / total) * 100);
 
-
-      if (event.data.type === "DOWNLOAD_PROGRESS") {
-        const { loaded, total } = event.data;
-        const progress = Math.floor((loaded / total) * 100);
-
-        progressBar.value = progress;
-        statusText.innerText = `Downloading... ${progress}%`;
-        return;
-      }
-
-      if (event.data.type === "DOWNLOAD_COMPLETE") {
-        statusText.innerText = "Download complete!";
-        isDownloading = false;
-        return;
-      }
-    }
-
-    Array.from(downloadBtns).forEach(btn => {
-      btn.addEventListener("click", async () => {
-        if (isDownloading) return;
-
-        if (!navigator.serviceWorker.controller) {
-          statusText.innerText = "Error: Service Worker not ready. Please reload.";
+          progressBar.value = progress;
+          statusText.innerText = `Downloading... ${progress}%`;
           return;
         }
 
-        isDownloading = true;
-        progressBar.value = 0;
-        statusText.innerText = "Starting download...";
+        if (event.data.type === "DOWNLOAD_COMPLETE") {
+          statusText.innerText =
+            "Download complete! (maybe the files is being saved on your computer)";
+          isDownloading = false;
 
-        const fileName = btn.getAttribute('file');
+          event.data.allChucks = null;
+          event = null;
 
-        const iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        iframe.src = this[fileName];
-        iframe.id = 'downloadFrame'
-        document.body.appendChild(iframe);
+          return;
+        }
+      }
+
+      Array.from(downloadBtns).forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          if (isDownloading) return;
+
+          if (!navigator.serviceWorker.controller) {
+            statusText.innerText =
+              "Error: Service Worker not ready. Please reload.";
+            return;
+          }
+
+          isDownloading = true;
+          progressBar.value = 0;
+          statusText.innerText = "Starting download...";
+
+          const fileName = btn.getAttribute("file");
+
+          const iframe = document.createElement("iframe");
+          iframe.style.display = "none";
+          iframe.src = this[fileName];
+          iframe.id = "downloadFrame";
+          document.body.appendChild(iframe);
+        });
       });
-    })
-  </script>
-</body>
-
+    </script>
+  </body>
 </html>

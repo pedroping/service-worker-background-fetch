@@ -59,6 +59,27 @@ app.get("/images/twilio.png", (req, res) => {
   });
 });
 
+app.get("/images/google-video.mp4", (req, res) => {
+  const filePath = path.join(__dirname, "public/images/google-video.mp4");
+
+  console.log(req.headers.cookie);
+
+  fs.stat(filePath, (err, stats) => {
+    if (err) {
+      res.sendStatus(404);
+      return;
+    }
+
+    res.setHeader("Content-Length", stats.size);
+    res.setHeader("Content-Type", "video/mp4");
+
+    res.set("X-Content-Name", "google-video.mp4");
+    res.set("Access-Control-Expose-Headers", "X-Content-Name");
+
+    res.sendFile(filePath);
+  });
+});
+
 app.get("/images/test.mp4", (req, res) => {
   const filePath = path.join(__dirname, "public/images/test.mp4");
 
@@ -79,6 +100,28 @@ app.get("/images/test.mp4", (req, res) => {
     res.sendFile(filePath);
   });
 });
+
+app.get("/images/movie.mkv", (req, res) => {
+  const filePath = path.join(__dirname, "public/images/movie.mkv");
+
+  console.log(req.headers.cookie);
+
+  fs.stat(filePath, (err, stats) => {
+    if (err) {
+      res.sendStatus(404);
+      return;
+    }
+
+    res.setHeader("Content-Length", stats.size);
+    res.setHeader("Content-Type", "video/webm");
+
+    res.set("X-Content-Name", "movie.mkv");
+    res.set("Access-Control-Expose-Headers", "X-Content-Name");
+
+    res.sendFile(filePath);
+  });
+});
+
 
 app.get("/images/Fotos-Copia.rar", (req, res) => {
   const filePath = path.join(__dirname, "public/images/Fotos-Copia.rar");
@@ -104,6 +147,11 @@ app.get("/images/stream-folder", async (req, res) => {
     const filePaths = [
       path.join(__dirname, "public/images/twilio.png"),
       path.join(__dirname, "public/images/test.mp4"),
+      path.join(__dirname, "public/images/google-video.mp4"),
+      path.join(__dirname, "public/images/google-videocopy 2.mp4"),
+      path.join(__dirname, "public/images/google-videocopy 3.mp4"),
+      path.join(__dirname, "public/images/google-videocopy 4.mp4"),
+      path.join(__dirname, "public/images/google-videocopy.mp4"),
     ];
 
     const sizes = await Promise.all(

@@ -97,9 +97,15 @@ self.addEventListener("fetch", (event) => {
         },
       });
 
-      const compressedReadableStream = stream.pipeThrough(
-        new CompressionStream("gzip"),
-      );
+      const customTransform = new TransformStream({
+        transform(chunk, controller) {
+          controller.enqueue(chunk);
+        },
+      });
+
+      const compressedReadableStream = contentName.includes("rar")
+        ? stream.pipeThrough(customTransform)
+        : stream.pipeThrough(new CompressionStream("gzip"));
 
       const headers = new Headers(response.headers);
 
@@ -107,7 +113,7 @@ self.addEventListener("fetch", (event) => {
 
       headers.set(
         "Content-Disposition",
-        `attachment; filename="${contentName}.gz"`,
+        `attachment; filename="${contentName}${contentName.includes("rar") ? "" : ".gz"}"`,
       );
 
       return new Response(compressedReadableStream, {
@@ -132,10 +138,5 @@ self.addEventListener("message", (event) => {
         });
       });
     });
-
-    // event.source.postMessage({
-    //   type: "myCustomEventTypeResponse",
-    //   status: "success",
-    // });
   }
 });
